@@ -28,6 +28,7 @@ observeEvent(input$button,{
   output$Plot1 <- renderPlot({
     df = data.frame(Sample = 1:input$N, Mean = ci()[,1])
     ggplot(df, aes(x=Sample, y=Mean)) +
+      ggtitle('Some Text') +
       geom_errorbar(aes(ymin=ci()[,2], ymax=ci()[,3]), width=.1) +
       geom_point(color = 'dodgerblue') +
       geom_hline(yintercept=input$trumu, color = 'firebrick2')
