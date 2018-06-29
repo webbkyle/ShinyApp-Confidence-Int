@@ -25,15 +25,25 @@ ci <- eventReactive(input$button,{
 })
 
 observeEvent(input$button,{
+  ci_ind = as.character((1-input$truerr)*100)
+  mean_ind = as.character(input$trumu)
+  sd_ind = as.character(input$trusig)
+  sub_ind = as.character(input$n)
   output$Plot1 <- renderPlot({
     df = data.frame(Sample = 1:input$N, Mean = ci()[,1])
     ggplot(df, aes(x=Sample, y=Mean)) +
-      ggtitle('Some Text') +
+      ggtitle(paste0(ci_ind,"% CI for Subsamples of size ",sub_ind," ~N(",mean_ind,",",sd_ind,")")) + 
+      xlab("Sample Number") +
+      theme(
+        plot.title = element_text(size=20),
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(size=14)
+      ) +
       geom_errorbar(aes(ymin=ci()[,2], ymax=ci()[,3]), width=.1) +
       geom_point(color = 'dodgerblue') +
       geom_hline(yintercept=input$trumu, color = 'firebrick2')
   })
-  output$Error <- renderText(paste0('Sampled Error: ',{sum(!(ci()[,2]<input$trumu & ci()[,3]>input$trumu))/input$N}))
+  output$Error <- renderText(paste0('Empirical Error: ',round({sum(!(ci()[,2]<input$trumu & ci()[,3]>input$trumu))/input$N},4)))
 })
 
 })
