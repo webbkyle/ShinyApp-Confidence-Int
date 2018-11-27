@@ -1,0 +1,10 @@
+name: shinyapp-confidence-int
+title:
+username:
+account: webb-kyle
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 593109
+bundleId: 1724519
+url: https://webb-kyle.shinyapps.io/shinyapp-confidence-int/
+when: 1543356986.33124
