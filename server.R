@@ -4,33 +4,41 @@ library(ggplot2)
 
 createCI<-function(M,m,MU,SIG,err){
   CI = matrix(0,M,2)
-  Xbar = c()
+  Xbar = color = c()
+  
   for(j in 1:M){
     samp = rnorm(m, MU, SIG)
     xbar = mean(samp)
     sighat = sqrt(t(samp-xbar)%*%(samp-xbar)/(m-1))
     Xbar = append(Xbar, xbar)
-    CI[j,] = c(xbar-qnorm(1-err/2)*(sighat/sqrt(m)), xbar+qnorm(1-err/2)*(sighat/sqrt(m)))
+    t_low = qt(1-err/2, m-1)*(sighat/sqrt(m))
+    t_high = qt(1-err/2, m-1)*(sighat/sqrt(m))
+    CI[j,] = c(xbar-t_low, xbar+t_high)
+    color = append(color, ifelse(MU < CI[j,1] | MU > CI[j,2], 
+                   'red', 'dodgerblue'))
   }
-  dat = cbind(Xbar,CI)
+  dat = data.frame("Xbar" = Xbar, "CI_low" = CI[,1], "CI_high" = CI[,2], "color" = color)
   return(dat)
 }
 
 
 shinyServer(function(input, output) {
-  
-plot_it <- reactiveValues(a=0)
+
 ci <- eventReactive(input$button,{
-  createCI(input$N,input$n,input$trumu,input$trusig,input$truerr)
+  createCI(input$N, input$n, input$trumu, input$trusig, input$truerr)
 })
 
 observeEvent(input$button,{
-  ci_ind = as.character((1-input$truerr)*100)
-  mean_ind = as.character(input$trumu)
-  sd_ind = as.character(input$trusig)
-  sub_ind = as.character(input$n)
+  plot_ci <- reactiveValues(N = input$N, n = input$n,
+                            trumu = input$trumu, trusig = input$trusig, truerr = input$truerr)
+  ci = createCI(plot_ci$N, plot_ci$n, plot_ci$trumu, plot_ci$trusig, plot_ci$truerr)
+  ci_ind = as.character((1-plot_ci$truerr)*100)
+  mean_ind = as.character(plot_ci$trumu)
+  sd_ind = as.character(plot_ci$trusig)
+  sub_ind = as.character(plot_ci$n)
+  
   output$Plot1 <- renderPlot({
-    df = data.frame(Sample = 1:input$N, Mean = ci()[,1])
+    df = data.frame(Sample = 1:plot_ci$N, Mean = ci[,1])
     ggplot(df, aes(x=Sample, y=Mean)) +
       ggtitle(paste0(ci_ind,"% CI for Subsamples of size ",sub_ind," ~N(",mean_ind,",",sd_ind,")")) + 
       xlab("Sample Number") +
@@ -39,11 +47,12 @@ observeEvent(input$button,{
         axis.title.y = element_blank(),
         axis.title.x = element_text(size=14)
       ) +
-      geom_errorbar(aes(ymin=ci()[,2], ymax=ci()[,3]), width=.1) +
-      geom_point(color = 'dodgerblue') +
+      geom_errorbar(aes(ymin=ci[,2], ymax=ci[,3]), width=.1) +
+      geom_point(color = ci$color) +
       geom_hline(yintercept=input$trumu, color = 'firebrick2')
   })
-  output$Error <- renderText(paste0('Empirical Error: ',round({sum(!(ci()[,2]<input$trumu & ci()[,3]>input$trumu))/input$N},4)))
+  
+  output$Error <- renderText(paste0('Empirical Error: ',round({sum(!(ci()[,2]<plot_ci$trumu & ci()[,3]>plot_ci$trumu))/plot_ci$N},4)))
 })
-
+  
 })
